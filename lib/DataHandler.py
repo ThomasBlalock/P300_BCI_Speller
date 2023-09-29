@@ -6,87 +6,52 @@ import random
 
 class DataHandler:
 
-    # Constants / Variables
-    port = 'COM4'
-    BLACK = (0, 0, 0)
-    WHITE = (255, 255, 255)
-    RED = (255, 0 , 0)
-    GREEN = (0, 255, 0)
-    window_size = (1024, 1024)
-    box_size = 512
-    flash_time = 0.75
-    wait_time = (1.5, 2.5)
-
-    def __init__(self, port = 'COM4', window_size = (1024, 1024), box_size = 512, 
-                 flash_time = 0.75, wait_time = (1.5, 2.5)):
-        self.port = port
-        self.window_size = window_size
-        self.box_size = box_size
+    def __init__(self, port = 'COM4', window_size = (1024, 1024), flash_time = 0.75, wait_time = (1.5, 2.5)):
         self.flash_time = flash_time
         self.wait_time = wait_time
+        self.box_GUI = Box_GUI(window_size)
+        self.board = Board(port)
 
-    def run_data_trial_box(self):
-        # Run Trial
+    def __del__(self):
+        del self.board
+        del self.box_GUI
 
-        # Prep board / data stream
-        BoardShim.enable_dev_board_logger()
-        params = BrainFlowInputParams()
-        params.serial_port = self.port
-        board = BoardShim(BoardIds.CYTON_BOARD, params)
-        board.prepare_session()
+    def run_data_trial_box(self, box_size = 256):
 
-        # Prep pygame window
-        pygame.init()
-        screen = pygame.display.set_mode(self.window_size)
-        clock = pygame.time.Clock()
         data = []
 
-        # Start window
-        self._reset_screen(screen, self.box_size)
-        pygame.display.flip()
+        self.box_GUI.reset_screen(box_size)
 
         # Wait for any button press to start sequence
-        waiting = True
-        while waiting:
-            for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    waiting = False
+        while True:
+            if self.box_GUI.button_press():
+                break
 
         # Data collection loop
-        running = True
-        while running:
-            # make random wait time between 1.5 and 2.5 seconds
+        while True:
+            # make random wait time in wait_time range
             wait_time = random.uniform(self.wait_time[0], self.wait_time[1])
 
             # Get data iteration (flash screen)
-            board.start_stream ()
-            self._flash_box(screen, self.box_size)
+            self.board.start_stream()
+            self.box_GUI.flash_box(box_size)
             time.sleep(self.flash_time)
-            data_iter = board.get_board_data()  # get all data and remove it from internal buffer
-            board.stop_stream()
-            data.append(data_iter)
+            data.append(self.board.get_data_stop_stream())
 
             # Unflash screen
-            self._reset_screen(screen, self.box_size)
+            self.box_GUI.reset_screen(box_size)
             time.sleep(wait_time)
 
-            # Break if any button pressed
-            for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    running = False
+            # Break if any button is pressed
+            if self.box_GUI.button_press():
+                break
 
-        board.release_session()
         pygame.quit()
 
         return data
 
     def run_data_trial_QWERTY(self):
         pass
-
-    def _reset_screen(self, screen, box_size):
-        screen.fill(self.BLACK)
-        pygame.draw.rect(screen, self.GREEN, (self.window_size[0]/4, self.window_size[1]/4, box_size, box_size), 0)
-        pygame.display.update()
 
     def _flash_box(self, screen, box_size):
         screen.fill(self.BLACK)
@@ -105,3 +70,63 @@ class DataHandler:
         with open(file_name, 'rb') as f:
             data = pickle.load(f)
         return data
+    
+
+class Board:
+    def __init__(self, port = 'COM4'):
+        self.port = port
+        # Prep board / data stream
+        BoardShim.enable_dev_board_logger()
+        params = BrainFlowInputParams()
+        params.serial_port = self.port
+        self.board = BoardShim(BoardIds.CYTON_BOARD, params)
+        self.board.prepare_session()
+
+    def __del__(self):
+        self.board.release_session()    
+
+    def start_stream(self):
+        self.board.start_stream()
+
+    def get_data_stop_stream(self):
+        data = self.board.get_board_data()
+        self.board.stop_stream()
+        return data
+
+    def get_data_keep_stream(self):
+        return self.board.get_board_data()
+    
+class Box_GUI:
+
+    # Constants
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+    RED = (255, 0 , 0)
+    GREEN = (0, 255, 0)
+
+    def __init__(self, window_size = (1024, 1024)):
+        self.window_size = window_size
+
+        # Prep pygame window
+        pygame.init()
+        self.screen = pygame.display.set_mode(self.window_size)
+
+    def __del__(self):
+        pygame.quit()
+    
+    def reset_screen(self, box_size):
+        self.screen.fill(self.BLACK)
+        pygame.draw.rect(self.screen, self.GREEN, (self.window_size[0]/4, self.window_size[1]/4, box_size, box_size), 0)
+        pygame.display.update()
+        pygame.display.flip()
+
+    def flash_box(self, box_size):
+        pygame.draw.rect(self.screen, self.RED, (self.window_size[0]/4, self.window_size[1]/4, box_size, box_size), 0)
+        pygame.display.update()
+        pygame.display.flip()
+
+    def button_press(self):
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                return True
+        return False

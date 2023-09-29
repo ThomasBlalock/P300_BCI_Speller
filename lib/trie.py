@@ -13,8 +13,8 @@ class TrieNode:
 class Trie:
     def __init__(self):
         self.root = TrieNode()
-        frequencies = nltk.FreqDist(words.words())
-        for word in frequencies.keys():
+        self.frequencies = nltk.FreqDist(words.words())
+        for word in self.frequencies.keys():
             self.insert(word)
     
     def insert(self, word):
@@ -33,7 +33,7 @@ class Trie:
         suggestions = []
         self._traverse_suffix(current, prefix, suggestions)
         
-        suggestions.sort(key=lambda x: frequencies[x], reverse=True)  
+        suggestions.sort(key=lambda x: self.frequencies[x], reverse=True)  
         return suggestions[:5] # return top 5
 
     
