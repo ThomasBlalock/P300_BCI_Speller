@@ -5,7 +5,7 @@ from brainflow.board_shim import BrainFlowInputParams
 import random
 import pyautogui
 
-class DataHandler:
+class DataAcquisitionsHandler:
 
     def __init__(self, port = 'COM4', flash_time = 0.75, wait_time = (1.5, 2.5)):
         self.flash_time = flash_time
