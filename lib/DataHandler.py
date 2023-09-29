@@ -3,74 +3,84 @@ import time
 from brainflow.board_shim import BoardShim, BoardIds
 from brainflow.board_shim import BrainFlowInputParams
 import random
+import pyautogui
 
 class DataHandler:
 
-    def __init__(self, port = 'COM4', window_size = (1024, 1024), flash_time = 0.75, wait_time = (1.5, 2.5)):
+    def __init__(self, port = 'COM4', flash_time = 0.75, wait_time = (1.5, 2.5)):
         self.flash_time = flash_time
         self.wait_time = wait_time
-        self.box_GUI = Box_GUI(window_size)
-        self.board = Board(port)
+        self.__board = Board(port)
+        self.__data = {}
 
     def __del__(self):
-        del self.board
-        del self.box_GUI
+        del self.__board
+        del GUI
 
-    def run_data_trial_box(self, box_size = 256):
+    def get_data(self):
+        return self.__data
+
+    def run_data_trial_box(self, box_size = 'screen'):
 
         data = []
-
-        self.box_GUI.reset_screen(box_size)
+        GUI = Box_GUI()
+        GUI.reset_screen(box_size)
 
         # Wait for any button press to start sequence
         while True:
-            if self.box_GUI.button_press():
+            if GUI.button_press():
                 break
 
         # Data collection loop
         while True:
+            GUI.reset_screen(box_size)
+
             # make random wait time in wait_time range
             wait_time = random.uniform(self.wait_time[0], self.wait_time[1])
-
-            # Get data iteration (flash screen)
-            self.board.start_stream()
-            self.box_GUI.flash_box(box_size)
-            time.sleep(self.flash_time)
-            data.append(self.board.get_data_stop_stream())
-
-            # Unflash screen
-            self.box_GUI.reset_screen(box_size)
-            time.sleep(wait_time)
-
-            # Break if any button is pressed
-            if self.box_GUI.button_press():
+            i = 0
+            end = False
+            while i < wait_time:
+                if GUI.button_press(): # Continuousely check for button press
+                    end = True
+                    break
+                time.sleep(0.1)
+                i += 0.1
+            if end:
                 break
 
-        pygame.quit()
+            # Get data iteration (flash screen)
+            self.__board.start_stream()
+            GUI.flash_box(box_size)
+            time.sleep(self.flash_time)
+            data.append(self.__board.get_data_stop_stream())
+        
+        del GUI
 
-        return data
+        # Save data to dict
+        self.add_data({'box_data-' + str(box_size): data})
 
     def run_data_trial_QWERTY(self):
         pass
 
-    def _flash_box(self, screen, box_size):
-        screen.fill(self.BLACK)
-        pygame.draw.rect(screen, self.RED, (self.window_size[0]/4, self.window_size[1]/4, box_size, box_size), 0)
-        pygame.display.update()
-
-    def print_to_file(self, data, file_name):
-        # print data to file using pickle
+    def save(self, file_name):
         import pickle
         with open(file_name, 'wb') as f:
-            pickle.dump(data, f)
+            pickle.dump(self.__data, f)
 
-    def load_from_file(self, file_name):
-        # Load pickle file 
+    def load(self, file_name):
         import pickle
         with open(file_name, 'rb') as f:
             data = pickle.load(f)
-        return data
+        self.add_data(data)
     
+    def add_data(self, data):
+        for key in data.keys():
+            if key in self.__data.keys():
+                self.__data[key].extend(data[key]) # append to existing key
+            else:
+                self.__data[key] = data[key] # create new key
+    
+
 
 class Board:
     def __init__(self, port = 'COM4'):
@@ -96,6 +106,8 @@ class Board:
     def get_data_keep_stream(self):
         return self.board.get_board_data()
     
+
+
 class Box_GUI:
 
     # Constants
@@ -104,24 +116,29 @@ class Box_GUI:
     RED = (255, 0 , 0)
     GREEN = (0, 255, 0)
 
-    def __init__(self, window_size = (1024, 1024)):
-        self.window_size = window_size
+    def __init__(self):
+        width, height = pyautogui.size()
+        self.window_size = (width, height-(height/20))
 
         # Prep pygame window
         pygame.init()
         self.screen = pygame.display.set_mode(self.window_size)
+        self.screen.fill(self.BLACK)
 
     def __del__(self):
         pygame.quit()
     
     def reset_screen(self, box_size):
-        self.screen.fill(self.BLACK)
-        pygame.draw.rect(self.screen, self.GREEN, (self.window_size[0]/4, self.window_size[1]/4, box_size, box_size), 0)
+        box_size = self.box_size_parser(box_size)
+        center = ((self.window_size[0] - box_size[0])/2, (self.window_size[1] - box_size[1])/2)
+        pygame.draw.rect(self.screen, self.GREEN, (center[0], center[1], box_size[0], box_size[1]), 0)
         pygame.display.update()
         pygame.display.flip()
 
     def flash_box(self, box_size):
-        pygame.draw.rect(self.screen, self.RED, (self.window_size[0]/4, self.window_size[1]/4, box_size, box_size), 0)
+        box_size = self.box_size_parser(box_size)
+        center = ((self.window_size[0] - box_size[0])/2, (self.window_size[1] - box_size[1])/2)
+        pygame.draw.rect(self.screen, self.RED, (center[0], center[1], box_size[0], box_size[1]), 0)
         pygame.display.update()
         pygame.display.flip()
 
@@ -130,3 +147,14 @@ class Box_GUI:
             if event.type == pygame.KEYDOWN:
                 return True
         return False
+    
+    def box_size_parser(self, box_size):
+        if  type(box_size) == str:
+            if box_size == 'screen' or box_size == 'full':
+                return self.window_size
+        elif type(box_size) == int:
+            return (box_size, box_size)
+        elif type(box_size) == tuple and len(box_size) == 2:
+            return box_size
+        else:
+            raise ValueError('Invalid box size input: ' + type(box_size) + '. Must be string, int, or 2-valued tuple.')
