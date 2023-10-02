@@ -5,7 +5,7 @@ from brainflow.board_shim import BrainFlowInputParams
 import random
 import pyautogui
 
-class DataAcquisitionsHandler:
+class DataAcquisitionHandler:
 
     def __init__(self, port = 'COM4', flash_time = 0.75, wait_time = (1.5, 2.5)):
         self.flash_time = flash_time
@@ -158,3 +158,54 @@ class Box_GUI:
             return box_size
         else:
             raise ValueError('Invalid box size input: ' + type(box_size) + '. Must be string, int, or 2-valued tuple.')
+        
+
+class Keyboard_GUI:
+
+    # Constants
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+    RED = (255, 0 , 0)
+    GREEN = (0, 255, 0)
+
+    def __init__(self):
+        width, height = pyautogui.size()
+        self.window_size = (width, height-(height/20))
+        self.keyboard = [["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "Backspace", "End"],
+                    ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P","(", ")"],
+                    ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"], 
+                    ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "Enter"],
+                    ["       "]]
+
+        # Prep pygame window
+        pygame.init()
+        self.screen = pygame.display.set_mode(self.window_size)
+        self.screen.fill(self.BLACK)
+        self.font = pygame.font.SysFont("Arial", 20)
+
+    def __del__(self):
+        pygame.quit()
+    
+    def reset_screen(self, button_size = None):
+        col_margin = 5
+        row_margin = 5
+        if button_size == None:
+            button_size = (self.window_size[0]/13, self.window_size[1]/5)
+        
+        # Draw buttons
+        for y, row in enumerate(self.keyboard):
+            for x, key in enumerate(row):
+                if y>=1 and y<=3: # Letters
+                    indent = 20
+                elif key=="       ": # Space bar
+                    button_size = (button_size[0]*5, button_size[1])
+                    indent = int(self.window_size[0]/2 - button_size[0]/2)
+                else:
+                    indent = 0
+                pygame.draw.rect(self.screen, self.WHITE, (indent+x*(button_size[0] + col_margin)+col_margin, 
+                                                           y*(button_size[1] + row_margin)+row_margin, button_size[0], button_size[1]))
+                text_surface = self.font.render(key, True, self.BLACK)
+                self.screen.blit(text_surface, (indent+x*(button_size[0] + col_margin)+col_margin+button_size[0]/2 - text_surface.get_width()/2, 
+                                                y*(button_size[1] + row_margin)+row_margin+button_size[1]/2 - text_surface.get_height()/2))
+        
+        pygame.display.flip()
