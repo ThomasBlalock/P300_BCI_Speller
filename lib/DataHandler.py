@@ -216,6 +216,7 @@ class DataAcquisitionHandler:
 
 
 class Board:
+    # TODO: Fix the siumlation option
     def __init__(self, port = 'COM4', simulate = False, simulation_file_path = 'data/simulation_data.pkl'):
         self.simulate = simulate
         self.simulation_data = None
