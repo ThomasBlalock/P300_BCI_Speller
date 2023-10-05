@@ -22,7 +22,7 @@ class DataAcquisitionHandler:
 
     def run_data_trial_box(self, box_size = 'screen'):
 
-        data = []
+        timestamps = []
         GUI = Box_GUI()
         GUI.reset_screen(box_size)
         board = Board(self.__board_port)
@@ -31,6 +31,9 @@ class DataAcquisitionHandler:
         while True:
             if GUI.button_press():
                 break
+
+        start_time = time.time()
+        board.start_stream()
 
         # Data collection loop
         while True:
@@ -50,21 +53,44 @@ class DataAcquisitionHandler:
                 break
 
             # Get data iteration (flash screen)
-            board.start_stream()
-            GUI.flash_box(box_size)
+            trial_start_time = time.time()
+            GUI.flash_box(box_size) 
+            # TODO: Multiple flashed per trial
+            # TODO: short flashes (.1-.3)
+            # TODO: when flash, make text white
             time.sleep(self.flash_time)
-            data.append(board.get_data_stop_stream())
+            trial_end_time = time.time()
+
+            # TODO: Add metadata file, then put that in tuple (metadata, data), then put that tuple in a dict (self.data).
+            trial_timestamps = (trial_start_time - start_time, trial_end_time - start_time)
+
+            timestamps.append(trial_timestamps) # [(start, end), (start, end), ...]
         
+        data = board.get_data()
+        board.stop_stream()
+
         del GUI
         del board
 
+        end_time = time.time() - start_time
+        metadata = {
+            'start_time': start_time, # time in seconds
+            'length': end_time, # time in seconds
+            'timestamps': timestamps, # [(start, end), (start, end), ...]
+        }
+
+        session_data = {
+            'metadata': metadata, # {'time': end_time, 'timestamps': [(start, end), (start, end), ...]}}
+            'data': data # [channel_1, channel_2, ..., channel_24]
+        }
+
         # Save data to dict
-        self.add_data({'box_data-' + str(box_size): data})
+        self.add_data({'box_data': session_data})
 
     def run_data_trial_QWERTY(self, letter="A"):
 
-        data = []
-        GUI = Keyboard_GUI()
+        trials = []
+        GUI = Keyboard_GUI(window_size = (1920, 1080))
         GUI.reset_screen()
         board = Board(self.__board_port)
 
@@ -74,6 +100,8 @@ class DataAcquisitionHandler:
                 break
 
         end = False
+        start_time = time.time()
+        board.start_stream()
 
         # Data collection loop
         while True:
@@ -102,17 +130,23 @@ class DataAcquisitionHandler:
 
                 # Get flash pattern
                 if pattern is None:
-                    pattern = GUI.get_search_pattern()
-                elif len(pattern)==1 or len(pattern)==0:
+                    pattern, full = GUI.get_search_pattern()
+                elif (len(pattern)==1 or len(pattern)==0) and response:
                     break
                 else:
-                    pattern = GUI.get_search_pattern(prev_flash=pattern[0:int(len(pattern)/2)], response=response)
+                    pattern, full = GUI.get_search_pattern(prev_flash=full, response=response)
 
                 # Get data iteration (flash screen)
-                board.start_stream()
-                GUI.flash_keys(pattern)
+                trial_start_time = time.time()
+                GUI.flash_keys(pattern) 
+                # TODO: Multiple flashed per trial
+                # TODO: short flashes (.1-.3)
+                # TODO: when flash, make text white
                 time.sleep(self.flash_time)
-                data.append(board.get_data_stop_stream())
+                trial_end_time = time.time()
+
+                # TODO: Add metadata file, then put that in tuple (metadata, data), then put that tuple in a dict (self.data).
+                trial_timestamps = (trial_start_time - start_time, trial_end_time - start_time)
 
                 # Get fake response
                 print("Pattern : "+str(pattern))
@@ -120,16 +154,43 @@ class DataAcquisitionHandler:
                     response = True
                 else:
                     response = False
+                print("Response : "+str(response))
+
+                trial = {
+                    'timestamp': trial_timestamps,
+                    'pattern': pattern,
+                    'letter': letter,
+                    'response': response
+                }
+
+                trials.append(trial)
         
+        data = board.get_data()
+        board.stop_stream()
+
         del GUI
         del board
 
-        # Save data to dict
-        self.add_data({'keyboard_data': data})
+        end_time = time.time() - start_time
+        metadata = {
+            'start_time': start_time, # time in seconds
+            'length': end_time, # time in seconds
+            'trials': trials, # [(start, end), (start, end), ...]
+        }
 
-    def save(self, file_name):
+        session_data = {
+            'metadata': metadata, # {'time': end_time, 'timestamps': [(start, end), (start, end), ...]}}
+            'data': data # [channel_1, channel_2, ..., channel_24]
+        }
+
+        # Save data to dict
+        self.add_data({'keyboard_data': session_data})
+
+    def save(self, data=None, file_name="data.pkl"):
+        if data is None:
+            data = self.__data
         with open(file_name, 'wb') as f:
-            pickle.dump(self.__data, f)
+            pickle.dump(data, f)
 
     def load(self, file_name):
         with open(file_name, 'rb') as f:
@@ -142,6 +203,15 @@ class DataAcquisitionHandler:
                 self.__data[key].extend(data[key]) # append to existing key
             else:
                 self.__data[key] = data[key] # create new key
+
+    def raw_data_stream(self, time_to_record = 100):
+        board = Board(self.__board_port)
+        board.start_stream()
+        time.sleep(time_to_record)
+        data = board.get_data_stop_stream()
+        del board
+        return data
+        
     
 
 
@@ -169,6 +239,10 @@ class Board:
         if not self.simulate:
             self.board.start_stream()
 
+    def stop_stream(self):
+        if not self.simulate:
+            self.board.stop_stream()
+
     def get_data_stop_stream(self):
         if self.simulate:
             rand_idx = random.uniform(0, 1)*(len(self.simulation_data['box_data-screen'])-1)
@@ -178,7 +252,7 @@ class Board:
             self.board.stop_stream()
         return data
 
-    def get_data_keep_stream(self):
+    def get_data(self):
         if self.simulate:
             rand_idx = random.uniform(0, 1)*(len(self.simulation_data['box_data-screen'])-1)
             data = self.simulation_data['box_data-screen'][rand_idx]
@@ -196,8 +270,11 @@ class Box_GUI:
     RED = (255, 0 , 0)
     GREEN = (0, 255, 0)
 
-    def __init__(self):
-        width, height = pyautogui.size()
+    def __init__(self, window_size = None):
+        if window_size == None:
+            width, height = pyautogui.size()
+        else:
+            width, height = window_size
         self.window_size = (width, height-(height/20))
 
         # Prep pygame window
@@ -248,8 +325,12 @@ class Keyboard_GUI:
     RED = (255, 0 , 0)
     GREEN = (0, 255, 0)
 
-    def __init__(self):
-        width, height = pyautogui.size()
+    def __init__(self, window_size=None):
+        if window_size == None:
+            width, height = pyautogui.size()
+        else:
+            width, height = window_size
+        self.window_size = (width, height-(height/20))
         self.window_size = (width, height-(height/20))
         self.keyboard = [["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "Backspace", "End"],
                     ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P","(", ")"],
@@ -321,17 +402,19 @@ class Keyboard_GUI:
         self.reset_screen(flash_keys = new_keys)
 
     def get_search_pattern(self, prev_flash=None, response=True):
-        if prev_flash==None:
-            prev_flash = self.keyboard
-
-        prev_flash = self.nested_to_1d_list(prev_flash)
-        
-        if response:
-            pattern = prev_flash[:int(len(prev_flash)/2)]
+        if prev_flash is None:
+            pattern = self.nested_to_1d_list(self.keyboard[:int(len(self.keyboard)/2)])
+            full = self.nested_to_1d_list(self.keyboard)
         else:
-            pattern = prev_flash[int(len(prev_flash)/2):]
+            prev_flash = self.nested_to_1d_list(prev_flash)
+            if response:
+                pattern = prev_flash[:int(len(prev_flash)/4)]
+                full = prev_flash[:int(len(prev_flash)/2)]
+            else:
+                pattern = prev_flash[int(len(prev_flash)/2):int(3*len(prev_flash)/4)]
+                full = prev_flash[int(len(prev_flash)/2):]
         
-        return pattern
+        return pattern, full
     
     def nested_to_1d_list(self, l):
         new_l = []
