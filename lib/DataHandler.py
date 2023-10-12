@@ -45,6 +45,12 @@ class Box_GUI:
     WHITE = (255, 255, 255)
     RED = (255, 0 , 0)
     GREEN = (0, 255, 0)
+    YELLOW = (255, 255, 0)
+    PURPLE = (255, 0, 255)
+    BLUE = (0, 0, 255)
+    ORANGE = (255, 165, 0)
+    PINK = (255, 192, 203)
+    COLOR_LIST = [RED, GREEN, YELLOW, PURPLE, BLUE, ORANGE, PINK]
 
     def __init__(self, window_size = None):
         if window_size == None:
@@ -68,10 +74,12 @@ class Box_GUI:
         pygame.display.update()
         pygame.display.flip()
 
-    def flash_box(self, box_size):
+    def flash_box(self, box_size, color='random'):
+        if color == 'random':
+            color = random.choice(self.COLOR_LIST)
         box_size = self.box_size_parser(box_size)
         center = ((self.window_size[0] - box_size[0])/2, (self.window_size[1] - box_size[1])/2)
-        pygame.draw.rect(self.screen, self.RED, (center[0], center[1], box_size[0], box_size[1]), 0)
+        pygame.draw.rect(self.screen, color, (center[0], center[1], box_size[0], box_size[1]), 0)
         pygame.display.update()
         pygame.display.flip()
 
@@ -201,14 +209,14 @@ class Keyboard_GUI:
             for item in l:
                 new_l.extend(self.nested_to_1d_list(item))
         return new_l
+    
 
+    class DataAcquisitionHandler:
 
-
-class DataAcquisitionHandler:
-
-    def __init__(self, port = 'COM4', flash_time = (0.1, 0.3), wait_time = (1.5, 2.5)):
+    def __init__(self, port = 'COM4', flash_time = (0.1, 0.3), wait_time = (1.5, 2.5), sample_time=1):
         self.flash_time = flash_time
         self.wait_time = wait_time
+        self.sample_time = sample_time
         self.__board_port = port
         self.__data = {}
 
@@ -218,10 +226,13 @@ class DataAcquisitionHandler:
     def get_data(self):
         return self.__data
 
-    def run_data_trial_box(self, box_size = 'screen', simulate=False):
+    def run_data_trial_box(self, box_size = 'screen', simulate=False, window_size = None):
 
         trials = []
-        GUI = Box_GUI()
+        if window_size is not None:
+            GUI = Box_GUI(window_size=window_size)
+        else:
+            GUI = Box_GUI()
         GUI.reset_screen(box_size)
         if not simulate:
             board = Board(self.__board_port)
@@ -256,12 +267,16 @@ class DataAcquisitionHandler:
             if not simulate:
                 trial_start_time = time.time()
 
-
-            GUI.flash_box(box_size) 
-            # TODO: Multiple flashed per trial
-            # TODO: when flash, make text white
-            flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
-            time.sleep(flash_time)
+            sample_time = 0
+            while sample_time < self.sample_time:
+                GUI.flash_box(box_size) 
+                # TODO: Multiple flashes per trial
+                # TODO: when flash, make text white
+                flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
+                if sample_time + flash_time > self.sample_time:
+                    flash_time = self.sample_time - sample_time
+                time.sleep(flash_time)
+                sample_time += flash_time
 
             if not simulate:
                 trial_end_time = time.time()
