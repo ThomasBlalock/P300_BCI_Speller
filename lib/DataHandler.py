@@ -502,3 +502,7 @@ class DataAcquisitionHandler:
             trial_data.append(data[:, start:end])
 
         return trial_data
+    
+    def get_tensor_data(self, data):
+        pass 
+        # TODO: Implement this method to get tensor calling parse_session_data
