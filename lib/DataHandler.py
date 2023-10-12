@@ -282,20 +282,26 @@ class DataAcquisitionHandler:
             if not simulate:
                 trial_start_time = time.time()
 
-            sample_time = 0
-            while sample_time < self.sample_time:
-                GUI.flash_box(box_size) 
-                flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
-                if sample_time + flash_time > self.sample_time:
-                    flash_time = self.sample_time - sample_time
-                time.sleep(flash_time)
-                sample_time += flash_time
+            run_flash = random.choice([True, False])
+            if run_flash:
+                sample_time = 0
+                while sample_time < self.sample_time:
+                    GUI.flash_box(box_size) 
+                    flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
+                    if sample_time + flash_time > self.sample_time:
+                        flash_time = self.sample_time - sample_time
+                    time.sleep(flash_time)
+                    sample_time += flash_time
+            else:
+                time.sleep(self.sample_time)
+            
+            print("Label : "+str(run_flash))
 
             if not simulate:
                 trial_end_time = time.time()
 
                 trial_timestamps = (trial_start_time - start_time, trial_end_time - start_time)
-                trial = {'timestamp': trial_timestamps, 'flash_time': flash_time}
+                trial = {'timestamp': trial_timestamps, 'label': run_flash}
 
                 trials.append(trial) # [{'timestamp': (start, end), 'flash_time': flash_time}, ...]
         
@@ -313,7 +319,8 @@ class DataAcquisitionHandler:
                 'length': end_time, # time in seconds
                 'trials': trials, # [(start, end), (start, end), ...]
                 'flash_time_range': self.flash_time, # time in seconds
-                'sample_time': self.sample_time # time in seconds
+                'sample_time': self.sample_time, # time in seconds
+                'box_size': box_size
             }
 
             session_data = {
