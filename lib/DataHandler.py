@@ -109,6 +109,12 @@ class Keyboard_GUI:
     WHITE = (255, 255, 255)
     RED = (255, 0 , 0)
     GREEN = (0, 255, 0)
+    YELLOW = (255, 255, 0)
+    PURPLE = (255, 0, 255)
+    BLUE = (0, 0, 255)
+    ORANGE = (255, 165, 0)
+    PINK = (255, 192, 203)
+    COLOR_LIST = [RED, YELLOW, PURPLE, BLUE, ORANGE, PINK]
 
     def __init__(self, window_size=None):
         if window_size == None:
@@ -132,7 +138,11 @@ class Keyboard_GUI:
     def __del__(self):
         pygame.quit()
     
-    def reset_screen(self, button_size = None, flash_keys = []):
+    def reset_screen(self, button_size = None, flash_keys = [], color='random'):
+        if color == 'random':
+            flash_color = random.choice(self.COLOR_LIST)
+        else:
+            flash_color = color
         col_margin = 5
         row_margin = 5
         if button_size == None:
@@ -143,7 +153,7 @@ class Keyboard_GUI:
             for x, key in enumerate(row):
 
                 if key in flash_keys:
-                    color = self.RED
+                    color = flash_color
                 else:
                     color = self.GREEN
 
@@ -171,7 +181,7 @@ class Keyboard_GUI:
     def get_keyboard(self):
         return self.keyboard
     
-    def flash_keys(self, keys):
+    def flash_keys(self, keys, color='random'):
         if type(keys) == str:
             new_keys = [keys]
         elif type(keys) == list:
@@ -184,7 +194,7 @@ class Keyboard_GUI:
         else:
             raise ValueError('Invalid key input: ' + type(keys) + '. Must be string or list of strings.')
         
-        self.reset_screen(flash_keys = new_keys)
+        self.reset_screen(flash_keys = new_keys, color=color)
 
     def get_search_pattern(self, prev_flash=None, response=True):
         if prev_flash is None:
@@ -211,7 +221,8 @@ class Keyboard_GUI:
         return new_l
     
 
-    class DataAcquisitionHandler:
+
+class DataAcquisitionHandler:
 
     def __init__(self, port = 'COM4', flash_time = (0.1, 0.3), wait_time = (1.5, 2.5), sample_time=1):
         self.flash_time = flash_time
@@ -270,7 +281,6 @@ class Keyboard_GUI:
             sample_time = 0
             while sample_time < self.sample_time:
                 GUI.flash_box(box_size) 
-                # TODO: Multiple flashes per trial
                 # TODO: when flash, make text white
                 flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
                 if sample_time + flash_time > self.sample_time:
@@ -310,10 +320,13 @@ class Keyboard_GUI:
             # Save data to dict
             self.add_data({'box_data': session_data})
 
-    def run_data_trial_QWERTY(self, letter="A", simulate=False):
+    def run_data_trial_QWERTY(self, letter="A", simulate=False, window_size = None):
 
         trials = []
-        GUI = Keyboard_GUI(window_size = (1920, 1080))
+        if window_size is not None:
+            GUI = Keyboard_GUI(window_size=window_size)
+        else:
+            GUI = Keyboard_GUI(window_size = (1920, 1080))
         GUI.reset_screen()
 
         if not simulate:
@@ -367,13 +380,15 @@ class Keyboard_GUI:
                     # Get data iteration (flash screen)
                     trial_start_time = time.time()
 
-                GUI.flash_keys(pattern) 
-                # TODO: Multiple flashes per trial
-                # TODO: short flashes (.1-.3)
-                # TODO: when flash, make text white
-
-                flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
-                time.sleep(flash_time)
+                sample_time = 0
+                while sample_time < self.sample_time:
+                    GUI.flash_keys(pattern)
+                    # TODO: when flash, make text white
+                    flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
+                    if sample_time + flash_time > self.sample_time:
+                        flash_time = self.sample_time - sample_time
+                    time.sleep(flash_time)
+                    sample_time += flash_time
 
                 if not simulate:
                     trial_end_time = time.time()
