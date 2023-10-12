@@ -6,260 +6,35 @@ import random
 import pyautogui
 import pickle
 
-class DataAcquisitionHandler:
-
-    def __init__(self, port = 'COM4', flash_time = 0.75, wait_time = (1.5, 2.5)):
-        self.flash_time = flash_time
-        self.wait_time = wait_time
-        self.__board_port = port
-        self.__data = {}
-
-    def __del__(self):
-        pass
-
-    def get_data(self):
-        return self.__data
-
-    def run_data_trial_box(self, box_size = 'screen'):
-
-        timestamps = []
-        GUI = Box_GUI()
-        GUI.reset_screen(box_size)
-        board = Board(self.__board_port)
-
-        # Wait for any button press to start sequence
-        while True:
-            if GUI.button_press():
-                break
-
-        start_time = time.time()
-        board.start_stream()
-
-        # Data collection loop
-        while True:
-            GUI.reset_screen(box_size)
-
-            # make random wait time in wait_time range
-            wait_time = random.uniform(self.wait_time[0], self.wait_time[1])
-            i = 0
-            end = False
-            while i < wait_time:
-                if GUI.button_press(): # Continuousely check for button press
-                    end = True
-                    break
-                time.sleep(0.1)
-                i += 0.1
-            if end:
-                break
-
-            # Get data iteration (flash screen)
-            trial_start_time = time.time()
-            GUI.flash_box(box_size) 
-            # TODO: Multiple flashed per trial
-            # TODO: short flashes (.1-.3)
-            # TODO: when flash, make text white
-            time.sleep(self.flash_time)
-            trial_end_time = time.time()
-
-            # TODO: Add metadata file, then put that in tuple (metadata, data), then put that tuple in a dict (self.data).
-            trial_timestamps = (trial_start_time - start_time, trial_end_time - start_time)
-
-            timestamps.append(trial_timestamps) # [(start, end), (start, end), ...]
-        
-        data = board.get_data()
-        board.stop_stream()
-
-        del GUI
-        del board
-
-        end_time = time.time() - start_time
-        metadata = {
-            'start_time': start_time, # time in seconds
-            'length': end_time, # time in seconds
-            'timestamps': timestamps, # [(start, end), (start, end), ...]
-        }
-
-        session_data = {
-            'metadata': metadata, # {'time': end_time, 'timestamps': [(start, end), (start, end), ...]}}
-            'data': data # [channel_1, channel_2, ..., channel_24]
-        }
-
-        # Save data to dict
-        self.add_data({'box_data': session_data})
-
-    def run_data_trial_QWERTY(self, letter="A"):
-
-        trials = []
-        GUI = Keyboard_GUI(window_size = (1920, 1080))
-        GUI.reset_screen()
-        board = Board(self.__board_port)
-
-        # Wait for any button press to start sequence
-        while True:
-            if GUI.button_press():
-                break
-
-        end = False
-        start_time = time.time()
-        board.start_stream()
-
-        # Data collection loop
-        while True:
-
-            pattern = None
-            response = True
-
-            if end:
-                    break
-
-            while True:
-                GUI.reset_screen()
-
-                # make random wait time in wait_time range
-                wait_time = random.uniform(self.wait_time[0], self.wait_time[1])
-                i = 0
-                end = False
-                while i < wait_time:
-                    if GUI.button_press(): # Continuousely check for button press
-                        end = True
-                        break
-                    time.sleep(0.1)
-                    i += 0.1
-                if end:
-                    break
-
-                # Get flash pattern
-                if pattern is None:
-                    pattern, full = GUI.get_search_pattern()
-                elif (len(pattern)==1 or len(pattern)==0) and response:
-                    break
-                else:
-                    pattern, full = GUI.get_search_pattern(prev_flash=full, response=response)
-
-                # Get data iteration (flash screen)
-                trial_start_time = time.time()
-                GUI.flash_keys(pattern) 
-                # TODO: Multiple flashed per trial
-                # TODO: short flashes (.1-.3)
-                # TODO: when flash, make text white
-                time.sleep(self.flash_time)
-                trial_end_time = time.time()
-
-                # TODO: Add metadata file, then put that in tuple (metadata, data), then put that tuple in a dict (self.data).
-                trial_timestamps = (trial_start_time - start_time, trial_end_time - start_time)
-
-                # Get fake response
-                print("Pattern : "+str(pattern))
-                if letter in pattern:
-                    response = True
-                else:
-                    response = False
-                print("Response : "+str(response))
-
-                trial = {
-                    'timestamp': trial_timestamps,
-                    'pattern': pattern,
-                    'letter': letter,
-                    'response': response
-                }
-
-                trials.append(trial)
-        
-        data = board.get_data()
-        board.stop_stream()
-
-        del GUI
-        del board
-
-        end_time = time.time() - start_time
-        metadata = {
-            'start_time': start_time, # time in seconds
-            'length': end_time, # time in seconds
-            'trials': trials, # [(start, end), (start, end), ...]
-        }
-
-        session_data = {
-            'metadata': metadata, # {'time': end_time, 'timestamps': [(start, end), (start, end), ...]}}
-            'data': data # [channel_1, channel_2, ..., channel_24]
-        }
-
-        # Save data to dict
-        self.add_data({'keyboard_data': session_data})
-
-    def save(self, data=None, file_name="data.pkl"):
-        if data is None:
-            data = self.__data
-        with open(file_name, 'wb') as f:
-            pickle.dump(data, f)
-
-    def load(self, file_name):
-        with open(file_name, 'rb') as f:
-            data = pickle.load(f)
-        self.add_data(data)
-    
-    def add_data(self, data):
-        for key in data.keys():
-            if key in self.__data.keys():
-                self.__data[key].extend(data[key]) # append to existing key
-            else:
-                self.__data[key] = data[key] # create new key
-
-    def raw_data_stream(self, time_to_record = 100):
-        board = Board(self.__board_port)
-        board.start_stream()
-        time.sleep(time_to_record)
-        data = board.get_data_stop_stream()
-        del board
-        return data
-        
-    
 
 
 class Board:
-    # TODO: Fix the siumlation option
-    def __init__(self, port = 'COM4', simulate = False, simulation_file_path = 'data/simulation_data.pkl'):
-        self.simulate = simulate
-        self.simulation_data = None
-        if self.simulate:
-            self.simulation_data = pickle.load(open(simulation_file_path, 'rb'))
-        else:
-            self.port = port
-            # Prep board / data stream
-            BoardShim.enable_dev_board_logger()
-            params = BrainFlowInputParams()
-            params.serial_port = self.port
-            self.board = BoardShim(BoardIds.CYTON_BOARD, params)
-            self.board.prepare_session()
+    def __init__(self, port = 'COM4'):
+        self.port = port
+        # Prep board / data stream
+        BoardShim.enable_dev_board_logger()
+        params = BrainFlowInputParams()
+        params.serial_port = self.port
+        self.board = BoardShim(BoardIds.CYTON_BOARD, params)
+        self.board.prepare_session()
         
 
     def __del__(self):
-        if not self.simulate:
-            self.board.release_session()    
+        self.board.release_session()    
 
     def start_stream(self):
-        if not self.simulate:
-            self.board.start_stream()
+        self.board.start_stream()
 
     def stop_stream(self):
-        if not self.simulate:
-            self.board.stop_stream()
+        self.board.stop_stream()
 
     def get_data_stop_stream(self):
-        if self.simulate:
-            rand_idx = random.uniform(0, 1)*(len(self.simulation_data['box_data-screen'])-1)
-            data = self.simulation_data['box_data-screen'][rand_idx]
-        else:
-            data = self.board.get_board_data()
-            self.board.stop_stream()
+        data = self.board.get_board_data()
+        self.board.stop_stream()
         return data
 
     def get_data(self):
-        if self.simulate:
-            rand_idx = random.uniform(0, 1)*(len(self.simulation_data['box_data-screen'])-1)
-            data = self.simulation_data['box_data-screen'][rand_idx]
-        else:
-            data = self.board.get_board_data()
-        return data
+        return self.board.get_board_data()
     
 
 
@@ -317,6 +92,7 @@ class Box_GUI:
         else:
             raise ValueError('Invalid box size input: ' + type(box_size) + '. Must be string, int, or 2-valued tuple.')
         
+
 
 class Keyboard_GUI:
 
@@ -425,3 +201,259 @@ class Keyboard_GUI:
             for item in l:
                 new_l.extend(self.nested_to_1d_list(item))
         return new_l
+
+
+
+class DataAcquisitionHandler:
+
+    def __init__(self, port = 'COM4', flash_time = (0.1, 0.3), wait_time = (1.5, 2.5)):
+        self.flash_time = flash_time
+        self.wait_time = wait_time
+        self.__board_port = port
+        self.__data = {}
+
+    def __del__(self):
+        pass
+
+    def get_data(self):
+        return self.__data
+
+    def run_data_trial_box(self, box_size = 'screen', simulate=False):
+
+        trials = []
+        GUI = Box_GUI()
+        GUI.reset_screen(box_size)
+        if not simulate:
+            board = Board(self.__board_port)
+
+        # Wait for any button press to start sequence
+        while True:
+            if GUI.button_press():
+                break
+
+        if  not simulate:
+            start_time = time.time()
+            board.start_stream()
+
+        # Data collection loop
+        while True:
+            GUI.reset_screen(box_size)
+
+            # make random wait time in wait_time range
+            wait_time = random.uniform(self.wait_time[0], self.wait_time[1])
+            i = 0
+            end = False
+            while i < wait_time:
+                if GUI.button_press(): # Continuousely check for button press
+                    end = True
+                    break
+                time.sleep(0.1)
+                i += 0.1
+            if end:
+                break
+
+            # Get data iteration (flash screen)
+            if not simulate:
+                trial_start_time = time.time()
+
+
+            GUI.flash_box(box_size) 
+            # TODO: Multiple flashed per trial
+            # TODO: when flash, make text white
+            flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
+            time.sleep(flash_time)
+
+            if not simulate:
+                trial_end_time = time.time()
+
+                trial_timestamps = (trial_start_time - start_time, trial_end_time - start_time)
+                trial = {'timestamp': trial_timestamps, 'flash_time': flash_time}
+
+                trials.append(trial) # [{'timestamp': (start, end), 'flash_time': flash_time}, ...]
+        
+        if not simulate:
+            data = board.get_data()
+            board.stop_stream()
+            del board
+
+        del GUI
+
+        if not simulate:
+            end_time = time.time() - start_time
+            metadata = {
+                'start_time': start_time, # time in seconds
+                'length': end_time, # time in seconds
+                'trials': trials, # [(start, end), (start, end), ...]
+                'flash_time_range': self.flash_time # time in seconds
+            }
+
+            session_data = {
+                'metadata': metadata, # {'start_time': start_time, 'length': length 'flash_time': flash_time, 'timestamps': [(start, end), (start, end), ...]}}
+                'data': data # [channel_1, channel_2, ..., channel_24]
+            }
+
+            # Save data to dict
+            self.add_data({'box_data': session_data})
+
+    def run_data_trial_QWERTY(self, letter="A", simulate=False):
+
+        trials = []
+        GUI = Keyboard_GUI(window_size = (1920, 1080))
+        GUI.reset_screen()
+
+        if not simulate:
+            board = Board(self.__board_port)
+
+        # Wait for any button press to start sequence
+        while True:
+            if GUI.button_press():
+                break
+
+        end = False
+
+        if not simulate:
+            start_time = time.time()
+            board.start_stream()
+
+        # Data collection loop
+        while True:
+
+            pattern = None
+            response = True
+
+            if end:
+                    break
+
+            while True:
+                GUI.reset_screen()
+
+                # make random wait time in wait_time range
+                wait_time = random.uniform(self.wait_time[0], self.wait_time[1])
+                i = 0
+                end = False
+                while i < wait_time:
+                    if GUI.button_press(): # Continuousely check for button press
+                        end = True
+                        break
+                    time.sleep(0.1)
+                    i += 0.1
+                if end:
+                    break
+
+                # Get flash pattern
+                if pattern is None:
+                    pattern, full = GUI.get_search_pattern()
+                elif (len(pattern)==1 or len(pattern)==0) and response:
+                    break
+                else:
+                    pattern, full = GUI.get_search_pattern(prev_flash=full, response=response)
+
+                if not simulate:
+                    # Get data iteration (flash screen)
+                    trial_start_time = time.time()
+
+                GUI.flash_keys(pattern) 
+                # TODO: Multiple flashes per trial
+                # TODO: short flashes (.1-.3)
+                # TODO: when flash, make text white
+
+                flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
+                time.sleep(flash_time)
+
+                if not simulate:
+                    trial_end_time = time.time()
+                    trial_timestamps = (trial_start_time - start_time, trial_end_time - start_time)
+
+                # Get fake response - TODO: replace with real response once we have it
+                print("Pattern : "+str(pattern))
+                if letter in pattern:
+                    response = True
+                else:
+                    response = False
+                print("Response : "+str(response))
+
+                if not simulate:
+                    trial = {
+                        'timestamp': trial_timestamps,
+                        'pattern': pattern,
+                        'letter': letter,
+                        'response': response,
+                        'flash_time': flash_time
+                    }
+
+                    trials.append(trial)
+        
+        if not simulate:
+            data = board.get_data()
+            board.stop_stream()
+            del board
+
+        del GUI
+
+        if not simulate:
+            end_time = time.time() - start_time
+            metadata = {
+                'start_time': start_time, # time in seconds
+                'length': end_time, # time in seconds
+                'trials': trials, # [(start, end), (start, end), ...]
+                'flash_time_range': self.flash_time # time in seconds
+            }
+
+            session_data = {
+                'metadata': metadata, # {'start_time': start_time, 'length': length 'flash_time': flash_time, 'trials': [{'timestamp': (start, end), 'pattern': pattern, 'letter': letter, 'response': response}...}}
+                'data': data # [channel_1, channel_2, ..., channel_24]
+            }
+
+            # Save data to dict
+            self.add_data({'keyboard_data': session_data})
+
+    def save(self, data=None, file_name="data.pkl"):
+        if data is None:
+            data = self.__data
+        with open(file_name, 'wb') as f:
+            pickle.dump(data, f)
+
+    def load(self, file_name="data.pkl"):
+        with open(file_name, 'rb') as f:
+            data = pickle.load(f)
+        self.add_data(data)
+    
+    def add_data(self, data):
+        for key in data.keys():
+            if key in self.__data.keys():
+                self.__data[key].extend(data[key]) # append to existing key
+            else:
+                self.__data[key] = data[key] # create new key
+
+    def raw_data_stream(self, time_to_record = 100):
+        board = Board(self.__board_port)
+        board.start_stream()
+        time.sleep(time_to_record)
+        data = board.get_data_stop_stream()
+        del board
+        return data
+
+    def parse_session_data(self, data):
+
+        metadata = data['metadata']
+        data = data['data']
+
+        start_time = metadata['start_time']
+        flash_time = metadata['flash_time']
+        timestamps = []
+        for trial in metadata['trials']:
+            timestamps.append(trial['timestamp'])
+        length = metadata['length']
+
+        # Get interval
+        interval_ratio = length/len(data[0])
+
+        # Get data for each trial
+        trial_data = []
+        for timestamp in timestamps:
+            start = int((timestamp[0])/interval_ratio) 
+            # Start - end is not fixed (runtime doesn't take same time each time). Use start - start+flash_time
+            end = int((timestamp[0] + flash_time)/interval_ratio)
+            trial_data.append(data[:, start:end])
+
+        return trial_data
