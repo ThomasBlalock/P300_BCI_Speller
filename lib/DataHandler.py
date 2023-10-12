@@ -312,7 +312,8 @@ class DataAcquisitionHandler:
                 'start_time': start_time, # time in seconds
                 'length': end_time, # time in seconds
                 'trials': trials, # [(start, end), (start, end), ...]
-                'flash_time_range': self.flash_time # time in seconds
+                'flash_time_range': self.flash_time, # time in seconds
+                'sample_time': self.sample_time # time in seconds
             }
 
             session_data = {
@@ -350,7 +351,7 @@ class DataAcquisitionHandler:
         while True:
 
             pattern = None
-            response = True
+            label = True
 
             if end:
                     break
@@ -374,10 +375,10 @@ class DataAcquisitionHandler:
                 # Get flash pattern
                 if pattern is None:
                     pattern, full = GUI.get_search_pattern()
-                elif (len(pattern)==1 or len(pattern)==0) and response:
+                elif (len(pattern)==1 or len(pattern)==0) and label:
                     break
                 else:
-                    pattern, full = GUI.get_search_pattern(prev_flash=full, response=response)
+                    pattern, full = GUI.get_search_pattern(prev_flash=full, response=label)
 
                 if not simulate:
                     # Get data iteration (flash screen)
@@ -395,22 +396,19 @@ class DataAcquisitionHandler:
                 if not simulate:
                     trial_end_time = time.time()
                     trial_timestamps = (trial_start_time - start_time, trial_end_time - start_time)
-
-                # Get fake response - TODO: replace with real response once we have it
+                    
                 print("Pattern : "+str(pattern))
-                if letter in pattern:
-                    response = True
-                else:
-                    response = False
-                print("Response : "+str(response))
+                
+                label = self._get_label_keyboard(letter, pattern)
+                
+                print("Label : "+str(label))
 
                 if not simulate:
                     trial = {
                         'timestamp': trial_timestamps,
                         'pattern': pattern,
                         'letter': letter,
-                        'response': response,
-                        'flash_time': flash_time
+                        'label': label
                     }
 
                     trials.append(trial)
@@ -428,16 +426,23 @@ class DataAcquisitionHandler:
                 'start_time': start_time, # time in seconds
                 'length': end_time, # time in seconds
                 'trials': trials, # [(start, end), (start, end), ...]
-                'flash_time_range': self.flash_time # time in seconds
+                'flash_time_range': self.flash_time, # time in seconds
+                'sample_time': self.sample_time # time in seconds
             }
 
             session_data = {
-                'metadata': metadata, # {'start_time': start_time, 'length': length 'flash_time': flash_time, 'trials': [{'timestamp': (start, end), 'pattern': pattern, 'letter': letter, 'response': response}...}}
+                'metadata': metadata, # {'start_time': start_time, 'length': length 'flash_time': flash_time, 'trials': [{'timestamp': (start, end), 'pattern': pattern, 'letter': letter, 'label' label}...}}
                 'data': data # [channel_1, channel_2, ..., channel_24]
             }
 
             # Save data to dict
             self.add_data({'keyboard_data': session_data})
+
+    def _get_label_keyboard(self, letter, pattern):
+        if letter in pattern:
+            return True
+        else:
+            return False
 
     def save(self, data=None, file_name="data.pkl"):
         if data is None:
@@ -465,13 +470,14 @@ class DataAcquisitionHandler:
         del board
         return data
 
-    def parse_session_data(self, data):
+    def parse_session_data(self, data): 
+        # TODO: Test this function. I redid the  data collection scripts on simulate
 
         metadata = data['metadata']
         data = data['data']
 
         start_time = metadata['start_time']
-        flash_time = metadata['flash_time']
+        sample_time = metadata['sample_time']
         timestamps = []
         for trial in metadata['trials']:
             timestamps.append(trial['timestamp'])
@@ -485,7 +491,7 @@ class DataAcquisitionHandler:
         for timestamp in timestamps:
             start = int((timestamp[0])/interval_ratio) 
             # Start - end is not fixed (runtime doesn't take same time each time). Use start - start+flash_time
-            end = int((timestamp[0] + flash_time)/interval_ratio)
+            end = int((timestamp[0] + sample_time)/interval_ratio)
             trial_data.append(data[:, start:end])
 
         return trial_data
