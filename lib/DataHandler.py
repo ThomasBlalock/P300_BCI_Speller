@@ -115,6 +115,7 @@ class Keyboard_GUI:
     ORANGE = (255, 165, 0)
     PINK = (255, 192, 203)
     COLOR_LIST = [RED, YELLOW, PURPLE, BLUE, ORANGE, PINK]
+    KEY_COLOR_LIST = [GREEN, YELLOW, PINK, WHITE]
 
     def __init__(self, window_size=None):
         if window_size == None:
@@ -141,6 +142,7 @@ class Keyboard_GUI:
     def reset_screen(self, button_size = None, flash_keys = [], color='random'):
         if color == 'random':
             flash_color = random.choice(self.COLOR_LIST)
+            flash_color_key = random.choice(self.KEY_COLOR_LIST)
         else:
             flash_color = color
         col_margin = 5
@@ -154,8 +156,10 @@ class Keyboard_GUI:
 
                 if key in flash_keys:
                     color = flash_color
+                    key_color = flash_color_key
                 else:
                     color = self.GREEN
+                    key_color = self.BLACK
 
                 if y>=1 and y<=3: # Letters
                     indent = 20
@@ -166,7 +170,7 @@ class Keyboard_GUI:
                     indent = 0
                 pygame.draw.rect(self.screen, color, (indent+x*(button_size[0] + col_margin)+col_margin, 
                                                            y*(button_size[1] + row_margin)+row_margin, button_size[0], button_size[1]))
-                text_surface = self.font.render(key, True, self.BLACK)
+                text_surface = self.font.render(key, True, key_color)
                 self.screen.blit(text_surface, (indent+x*(button_size[0] + col_margin)+col_margin+button_size[0]/2 - text_surface.get_width()/2, 
                                                 y*(button_size[1] + row_margin)+row_margin+button_size[1]/2 - text_surface.get_height()/2))
         
@@ -281,7 +285,6 @@ class DataAcquisitionHandler:
             sample_time = 0
             while sample_time < self.sample_time:
                 GUI.flash_box(box_size) 
-                # TODO: when flash, make text white
                 flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
                 if sample_time + flash_time > self.sample_time:
                     flash_time = self.sample_time - sample_time
@@ -383,7 +386,6 @@ class DataAcquisitionHandler:
                 sample_time = 0
                 while sample_time < self.sample_time:
                     GUI.flash_keys(pattern)
-                    # TODO: when flash, make text white
                     flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
                     if sample_time + flash_time > self.sample_time:
                         flash_time = self.sample_time - sample_time
