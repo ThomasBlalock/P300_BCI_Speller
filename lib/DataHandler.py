@@ -5,8 +5,43 @@ from brainflow.board_shim import BrainFlowInputParams
 import random
 import pyautogui
 import pickle
+import torch
+import numpy as np # impedence code vvv
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import signal
+from scipy.signal import butter, lfilter
+from scipy.fft import fft, fftfreq
 
 
+def bandstop_filter(data, lowcut, highcut, fs, order=5):
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    b, a = signal.butter(order, [low, high], btype='band')
+    y = signal.lfilter(b, a, data)
+    return y
+
+def calculate_impedance(eeg_data):
+    # Apply a bandstop filter around 50Hz
+    eeg_filtered = bandstop_filter(eeg_data, 49, 51, 250, order=3)
+
+    N = 500
+    T = 1.0 / 1000.0
+    x = np.linspace(0.0, N*T, N, endpoint=False)
+    yf = fft(eeg_filtered)
+    xf = fftfreq(N, T)[:N//2]
+    
+    # This is an experimental method not a direct method to measure impedance
+    # Here we assume that the maximum frequency component corresponds to the impedance
+    peak_frequency = xf[np.argmax(np.abs(yf[0:N//2]))]
+
+    # calculate impedance
+    impedance = 1.0/peak_frequency
+    
+    return impedance
+
+# impedence code ^^^
 
 class Board:
     def __init__(self, port = 'COM4'):
@@ -21,6 +56,7 @@ class Board:
 
     def __del__(self):
         self.board.release_session()    
+        time.sleep(0.5)
 
     def start_stream(self):
         self.board.start_stream()
@@ -35,6 +71,21 @@ class Board:
 
     def get_data(self):
         return self.board.get_board_data()
+    
+    def get_impedance(self): # impedence code vvv
+        # we start the stream
+        self.start_stream()
+        
+        # get a chunk of data
+        data = self.get_data()
+
+        # we stop the stream
+        self.stop_stream()
+
+        # we get the eeg data
+        eeg_data = data[0]  # assuming the eeg data is the first element in data
+        # calculate the impedance and return it
+        return calculate_impedance(eeg_data)
     
 
 
@@ -224,8 +275,6 @@ class Keyboard_GUI:
                 new_l.extend(self.nested_to_1d_list(item))
         return new_l
     
-
-
 class DataAcquisitionHandler:
 
     def __init__(self, port = 'COM4', flash_time = (0.1, 0.3), wait_time = (1.5, 2.5), sample_time=1):
@@ -237,6 +286,12 @@ class DataAcquisitionHandler:
 
     def __del__(self):
         pass
+
+    def meaure_impedance(self):
+        board = Board(self.__board_port)
+        impedance = board.impedance()
+        del board
+        return impedance
 
     def get_data(self):
         return self.__data
@@ -323,10 +378,10 @@ class DataAcquisitionHandler:
                 'box_size': box_size
             }
 
-            session_data = {
+            session_data = [{ # TODO: I just made this input as a list  so it matches the data structure I made. Test it with the helmet
                 'metadata': metadata, # {'start_time': start_time, 'length': length 'flash_time': flash_time, 'timestamps': [(start, end), (start, end), ...]}}
                 'data': data # [channel_1, channel_2, ..., channel_24]
-            }
+            }]
 
             # Save data to dict
             self.add_data({'box_data': session_data})
@@ -437,12 +492,13 @@ class DataAcquisitionHandler:
                 'sample_time': self.sample_time # time in seconds
             }
 
-            session_data = {
+            session_data = [{ # TODO: I just made this input as a list  so it matches the data structure I made. Test it with the helmet
                 'metadata': metadata, # {'start_time': start_time, 'length': length 'flash_time': flash_time, 'trials': [{'timestamp': (start, end), 'pattern': pattern, 'letter': letter, 'label' label}...}}
                 'data': data # [channel_1, channel_2, ..., channel_24]
-            }
+            }]
 
             # Save data to dict
+            print("DJISBDUIOBUIWOBYUW")
             self.add_data({'keyboard_data': session_data})
 
     def _get_label_keyboard(self, letter, pattern):
@@ -478,16 +534,25 @@ class DataAcquisitionHandler:
         return data
 
     def parse_session_data(self, data): 
-        # TODO: Test this function. I redid the  data collection scripts on simulate
+        """
+        Parses the raw data stream into data windows for training/testing/deployment
+
+        Params:
+            data: dictionary containing metadata and raw data for a session.
+
+        Returns:
+            trial_data: list of tuples containing data windows for each trial and labels for each trial
+            [ ( [channel1, ... channel24], label ), ...]
+        """
 
         metadata = data['metadata']
         data = data['data']
 
         start_time = metadata['start_time']
         sample_time = metadata['sample_time']
-        timestamps = []
+        timestamps_labels = []
         for trial in metadata['trials']:
-            timestamps.append(trial['timestamp'])
+            timestamps_labels.append((trial['timestamp'], trial['label']))
         length = metadata['length']
 
         # Get interval
@@ -495,14 +560,20 @@ class DataAcquisitionHandler:
 
         # Get data for each trial
         trial_data = []
-        for timestamp in timestamps:
+        for timestamp_labels in timestamps_labels:
+            timestamp = timestamp_labels[0]
+            label = timestamp_labels[1]
             start = int((timestamp[0])/interval_ratio) 
             # Start - end is not fixed (runtime doesn't take same time each time). Use start - start+flash_time
             end = int((timestamp[0] + sample_time)/interval_ratio)
-            trial_data.append(data[:, start:end])
+            trial_data.append((data[:, start:end], label))
 
         return trial_data
     
     def get_tensor_data(self, data):
-        pass 
+        data = self.parse_session_data(data)
+        for trial in data:
+            trial[0] = torch.tensor(trial[0])
+            trial[1] = torch.tensor(trial[1])
+
         # TODO: Implement this method to get tensor calling parse_session_data
