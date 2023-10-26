@@ -569,11 +569,3 @@ class DataAcquisitionHandler:
             trial_data.append((data[:, start:end], label))
 
         return trial_data
-    
-    def get_tensor_data(self, data):
-        data = self.parse_session_data(data)
-        for trial in data:
-            trial[0] = torch.tensor(trial[0])
-            trial[1] = torch.tensor(trial[1])
-
-        # TODO: Implement this method to get tensor calling parse_session_data
