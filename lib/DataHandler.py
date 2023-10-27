@@ -41,7 +41,7 @@ def calculate_impedance(eeg_data):
     
     return impedance
 
-# impedence code ^^^
+# impedence code ^^^ // not used currently
 
 class Board:
     def __init__(self, port = 'COM4'):
@@ -56,7 +56,7 @@ class Board:
 
     def __del__(self):
         self.board.release_session()    
-        time.sleep(0.5)
+        time.sleep(1.5) # It crashes if you  restart the board too quickly
 
     def start_stream(self):
         self.board.start_stream()
@@ -275,6 +275,8 @@ class Keyboard_GUI:
                 new_l.extend(self.nested_to_1d_list(item))
         return new_l
     
+
+
 class DataAcquisitionHandler:
 
     def __init__(self, port = 'COM4', flash_time = (0.1, 0.3), wait_time = (1.5, 2.5), sample_time=1):
@@ -378,7 +380,7 @@ class DataAcquisitionHandler:
                 'box_size': box_size
             }
 
-            session_data = [{ # TODO: I just made this input as a list  so it matches the data structure I made. Test it with the helmet
+            session_data = [{
                 'metadata': metadata, # {'start_time': start_time, 'length': length 'flash_time': flash_time, 'timestamps': [(start, end), (start, end), ...]}}
                 'data': data # [channel_1, channel_2, ..., channel_24]
             }]
@@ -492,13 +494,11 @@ class DataAcquisitionHandler:
                 'sample_time': self.sample_time # time in seconds
             }
 
-            session_data = [{ # TODO: I just made this input as a list  so it matches the data structure I made. Test it with the helmet
+            session_data = [{
                 'metadata': metadata, # {'start_time': start_time, 'length': length 'flash_time': flash_time, 'trials': [{'timestamp': (start, end), 'pattern': pattern, 'letter': letter, 'label' label}...}}
                 'data': data # [channel_1, channel_2, ..., channel_24]
             }]
 
-            # Save data to dict
-            print("DJISBDUIOBUIWOBYUW")
             self.add_data({'keyboard_data': session_data})
 
     def _get_label_keyboard(self, letter, pattern):
