@@ -506,13 +506,16 @@ class DataAcquisitionHandler:
         else:
             return False
 
-    def save(self, data=None, file_name="data.pkl"):
+    def save(self, data=None, file_name=None):
+        if file_name is None:
+            # name the file by date
+            file_name = "handler_"+time.strftime("%Y%m%d-%H%M%S")+".pickle"
         if data is None:
             data = self.__data
         with open(file_name, 'wb') as f:
             pickle.dump(data, f)
 
-    def load(self, file_name="data.pkl"):
+    def load(self, file_name):
         with open(file_name, 'rb') as f:
             data = pickle.load(f)
         self.add_data(data)
