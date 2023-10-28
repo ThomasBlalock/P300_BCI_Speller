@@ -41,7 +41,7 @@ def calculate_impedance(eeg_data):
     
     return impedance
 
-# impedence code ^^^ // not used currently
+# impedence code ^^^
 
 class Board:
     def __init__(self, port = 'COM4'):
@@ -298,7 +298,7 @@ class DataAcquisitionHandler:
     def get_data(self):
         return self.__data
 
-    def run_data_trial_box(self, box_size = 'screen', simulate=False, window_size = None):
+    def run_data_trial_box(self, box_size = 'screen', simulate=False, window_size = None, description=None):
 
         trials = []
         if window_size is not None:
@@ -377,7 +377,8 @@ class DataAcquisitionHandler:
                 'trials': trials, # [(start, end), (start, end), ...]
                 'flash_time_range': self.flash_time, # time in seconds
                 'sample_time': self.sample_time, # time in seconds
-                'box_size': box_size
+                'box_size': box_size,
+                'description': description # Text description passed in as an input
             }
 
             session_data = [{
@@ -388,7 +389,7 @@ class DataAcquisitionHandler:
             # Save data to dict
             self.add_data({'box_data': session_data})
 
-    def run_data_trial_QWERTY(self, letter="A", simulate=False, window_size = None):
+    def run_data_trial_QWERTY(self, letter="A", simulate=False, window_size=None, description=None):
 
         trials = []
         if window_size is not None:
@@ -491,7 +492,8 @@ class DataAcquisitionHandler:
                 'length': end_time, # time in seconds
                 'trials': trials, # [(start, end), (start, end), ...]
                 'flash_time_range': self.flash_time, # time in seconds
-                'sample_time': self.sample_time # time in seconds
+                'sample_time': self.sample_time, # time in seconds
+                'description': description # Text description passed in as an input
             }
 
             session_data = [{
