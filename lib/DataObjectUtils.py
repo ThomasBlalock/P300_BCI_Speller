@@ -31,7 +31,7 @@ class MakeWindowsDataVisitor(DataVisitor):
 
         data = []
         for session in sessions:
-            data.extend(session.get_data(visitor=MakeWindowsDataVisitor()))
+            data.extend(MakeWindowsDataVisitor.visit_session_data(session=session))
         return data
     
 
@@ -42,7 +42,7 @@ class MakeWindowsDataVisitor(DataVisitor):
         """
         data = []
         for trial in session.trials:
-            data.append(trial.get_data(visitor=MakeWindowsDataVisitor()))
+            data.append(MakeWindowsDataVisitor.visit_trial_data(trial=trial))
         return data
     
 
