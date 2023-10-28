@@ -18,7 +18,7 @@ class DataVisitor(object):
 
 class MakeWindowsDataVisitor(DataVisitor):
     """
-    Returns a list of tuples ( data_window, label )
+    Returns a list of tuples ( data_window, label ) that represent a single sameple of the data
     """
 
 
