@@ -190,7 +190,7 @@ class Keyboard_GUI:
     def __del__(self):
         pygame.quit()
     
-    def reset_screen(self, button_size = None, flash_keys = [], color='random'):
+    def reset_screen(self, button_size = None, flash_keys = [], color='random', target_letter=None):
         if color == 'random':
             flash_color = random.choice(self.COLOR_LIST)
             flash_color_key = random.choice(self.KEY_COLOR_LIST)
@@ -200,6 +200,9 @@ class Keyboard_GUI:
         row_margin = 5
         if button_size == None:
             button_size = (self.window_size[0]/13, self.window_size[1]/5)
+
+        # Draw a big black box over everything
+        pygame.draw.rect(self.screen, self.BLACK, (0, 0, self.window_size[0], self.window_size[1]), 0)
         
         # Draw buttons
         for y, row in enumerate(self.keyboard):
@@ -225,6 +228,12 @@ class Keyboard_GUI:
                 self.screen.blit(text_surface, (indent+x*(button_size[0] + col_margin)+col_margin+button_size[0]/2 - text_surface.get_width()/2, 
                                                 y*(button_size[1] + row_margin)+row_margin+button_size[1]/2 - text_surface.get_height()/2))
         
+        # Draw target letter on bottom left corner
+        if target_letter is not None:
+            text_surface = self.font.render(target_letter, True, self.WHITE)
+            self.screen.blit(text_surface, (5 + text_surface.get_width(), 
+                                            self.window_size[1] - 5 - text_surface.get_height()))
+
         pygame.display.flip()
 
     def button_press(self):
@@ -236,7 +245,7 @@ class Keyboard_GUI:
     def get_keyboard(self):
         return self.keyboard
     
-    def flash_keys(self, keys, color='random'):
+    def flash_keys(self, keys, color='random', target_letter=None):
         if type(keys) == str:
             new_keys = [keys]
         elif type(keys) == list:
@@ -249,7 +258,7 @@ class Keyboard_GUI:
         else:
             raise ValueError('Invalid key input: ' + type(keys) + '. Must be string or list of strings.')
         
-        self.reset_screen(flash_keys = new_keys, color=color)
+        self.reset_screen(flash_keys = new_keys, color=color, target_letter=target_letter)
 
     def get_search_pattern(self, prev_flash=None, response=True):
         if prev_flash is None:
@@ -275,9 +284,7 @@ class Keyboard_GUI:
                 new_l.extend(self.nested_to_1d_list(item))
         return new_l
     
-
-
-class DataAcquisitionHandler:
+    class DataAcquisitionHandler:
 
     def __init__(self, port = 'COM4', flash_time = (0.1, 0.3), wait_time = (1.5, 2.5), sample_time=1):
         self.flash_time = flash_time
@@ -389,7 +396,12 @@ class DataAcquisitionHandler:
             # Save data to dict
             self.add_data({'box_data': session_data})
 
-    def run_data_trial_QWERTY(self, letter="A", simulate=False, window_size=None, description=None):
+    def run_data_trial_QWERTY(self, letter="Random", simulate=False, window_size=None, description=None):
+
+        if letter=="Random":
+            random_letter = True
+        else:
+            random_letter = False
 
         trials = []
         if window_size is not None:
@@ -421,8 +433,15 @@ class DataAcquisitionHandler:
             if end:
                     break
 
+            if random_letter:
+                choices = GUI.nested_to_1d_list(GUI.get_keyboard())
+                random_idx = np.random.randint(0, len(choices))
+                letter = choices[random_idx]
+                
+            GUI.reset_screen(target_letter=letter)
+
             while True:
-                GUI.reset_screen()
+                GUI.reset_screen(target_letter=letter)
 
                 # make random wait time in wait_time range
                 wait_time = random.uniform(self.wait_time[0], self.wait_time[1])
@@ -442,6 +461,8 @@ class DataAcquisitionHandler:
                     pattern, full = GUI.get_search_pattern()
                 elif (len(pattern)==1 or len(pattern)==0) and label:
                     break
+                elif len(full)==2:
+                    break
                 else:
                     pattern, full = GUI.get_search_pattern(prev_flash=full, response=label)
 
@@ -451,7 +472,7 @@ class DataAcquisitionHandler:
 
                 sample_time = 0
                 while sample_time < self.sample_time:
-                    GUI.flash_keys(pattern)
+                    GUI.flash_keys(keys=pattern, target_letter=letter)
                     flash_time = random.uniform(self.flash_time[0], self.flash_time[1])
                     if sample_time + flash_time > self.sample_time:
                         flash_time = self.sample_time - sample_time
@@ -467,6 +488,7 @@ class DataAcquisitionHandler:
                 label = self._get_label_keyboard(letter, pattern)
                 
                 print("Label : "+str(label))
+                print("Letter : "+str(letter))
 
                 if not simulate:
                     trial = {
