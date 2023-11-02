@@ -284,7 +284,7 @@ class Keyboard_GUI:
                 new_l.extend(self.nested_to_1d_list(item))
         return new_l
     
-    class DataAcquisitionHandler:
+class DataAcquisitionHandler:
 
     def __init__(self, port = 'COM4', flash_time = (0.1, 0.3), wait_time = (1.5, 2.5), sample_time=1):
         self.flash_time = flash_time
