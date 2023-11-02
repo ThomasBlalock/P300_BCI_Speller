@@ -2,16 +2,22 @@ class DataObject:
 
 
     def __init__(self, data_dict):
-        keyboard_session_list = data_dict['keyboard_data']
-        box_session_list = data_dict['box_data']
 
         self.keyboard_sessions = []
-        for session_dict in keyboard_session_list:
-            self.keyboard_sessions.append(SessionData(session_dict=session_dict, type='keyboard'))
+
+        if 'keyboard_data' in data_dict.keys():
+            keyboard_session_list = data_dict['keyboard_data']
+
+            for session_dict in keyboard_session_list:
+                self.keyboard_sessions.append(SessionData(session_dict=session_dict, type='keyboard'))
 
         self.box_sessions = []
-        for session_dict in box_session_list:
-            self.box_sessions.append(SessionData(session_dict=session_dict, type='box'))
+
+        if 'box_data' in data_dict.keys():
+            box_session_list = data_dict['box_data']
+
+            for session_dict in box_session_list:
+                self.box_sessions.append(SessionData(session_dict=session_dict, type='box'))
 
 
     def get_data(self, visitor=None, type='box'):
