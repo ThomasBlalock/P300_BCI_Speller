@@ -18,12 +18,14 @@ class DataVisitor(object):
 
 class MakeWindowsDataVisitor(DataVisitor):
     """
-    Returns a list of tuples ( data_window, label ) that represent a single sameple of the data
+    Returns a list of tuples ( data_window, label )
     """
 
+    def __init__(self):
+        pass
 
-    @staticmethod
-    def visit_data_object(object, type):
+
+    def visit_data_object(self, object, type):
         """
         Returns a list of tuples ( data_windows, label )
         """
@@ -31,23 +33,21 @@ class MakeWindowsDataVisitor(DataVisitor):
 
         data = []
         for session in sessions:
-            data.extend(MakeWindowsDataVisitor.visit_session_data(session=session))
+            data.extend(self.visit_session_data(session=session))
         return data
     
 
-    @staticmethod
-    def visit_session_data(session):
+    def visit_session_data(self, session):
         """
         Returns a list of tuples ( data_windows, label )
         """
         data = []
         for trial in session.trials:
-            data.append(MakeWindowsDataVisitor.visit_trial_data(trial=trial))
+            data.append(self.visit_trial_data(trial=trial))
         return data
     
 
-    @staticmethod
-    def visit_trial_data(trial):
+    def visit_trial_data(self, trial):
         """
         Returns a tuple ( data_windows, label )
         """
@@ -59,4 +59,34 @@ class MakeWindowsDataVisitor(DataVisitor):
         start = (int) ( (start / trial.parent_session.length) * data_len )
         end = (int) ( (end / trial.parent_session.length) * data_len )
 
-        return ( trial.parent_session.data[:, start:end], trial.label )
+        window = self.transform_window(trial.parent_session.data[:, start:end])
+        label = self.transform_label(trial.label)
+
+        return ( window, label )
+    
+    def transform_window(window):
+        return window
+    
+    def transform_label(label):
+        return label
+    
+
+class MakeTensorWindowsDataVisitor(MakeWindowsDataVisitor):
+    """
+    Returns a list of tuples ( data_window, label ) for each window in the format of a pytorch tensor
+    """
+
+    @staticmethod
+    def transform_label(label):
+        if not label:
+            label = 0
+        elif label:
+            label = 1
+        else:
+            raise ValueError('MakeTensorWindowsDataVisitor object/ transform_label method: Label must be a boolean')
+        
+        return torch.tensor(label)
+    
+    @staticmethod
+    def transform_window(window):
+        return torch.from_numpy(window).float()
