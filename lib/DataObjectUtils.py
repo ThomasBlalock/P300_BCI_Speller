@@ -1,4 +1,4 @@
-class DataVisitor(object):
+class DataDecorator(object):
 
     @staticmethod
     def visit_data_object(object):
@@ -16,7 +16,7 @@ class DataVisitor(object):
 ##########################################################################################
 
 
-class MakeWindowsDataVisitor(DataVisitor):
+class MakeWindowsDataDecorator(DataDecorator):
     """
     Returns a list of tuples ( data_window, label )
     """
@@ -71,7 +71,7 @@ class MakeWindowsDataVisitor(DataVisitor):
         return label
     
 
-class MakeTensorWindowsDataVisitor(MakeWindowsDataVisitor):
+class MakeTensorWindowsDataDecorator(MakeWindowsDataDecorator):
     """
     Returns a list of tuples ( data_window, label ) for each window in the format of a pytorch tensor
     """
