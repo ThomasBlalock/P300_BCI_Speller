@@ -4,15 +4,12 @@ import torch
 
 class DataDecorator(object):
 
-    @staticmethod
     def visit_data_object(object):
         raise NotImplementedError
     
-    @staticmethod
     def visit_session_data(session):
         raise NotImplementedError
     
-    @staticmethod
     def visit_trial_data(trial, raw_data):
         raise NotImplementedError
 
@@ -29,16 +26,23 @@ class MakeWindowsDataDecorator(DataDecorator):
         pass
 
 
-    def visit_data_object(self, object, type):
+    def visit_data_object(self, object):
         """
-        Returns a list of tuples ( data_windows, label )
+        Returns a tuple of lists of tuples ( [( data_windows, label ) ...], [( data_windows, label ) ...] )
+        This first is the keyboard data, the second is the box data
         """
-        sessions = object.keyboard_sessions if type == 'keyboard' else object.box_sessions
+        keyboard_sessions = object.keyboard_sessions
+        box_sessions = object.box_sessions
 
-        data = []
-        for session in sessions:
-            data.extend(self.visit_session_data(session=session))
-        return data
+        keyboard_data = []
+        for session in keyboard_sessions:
+            keyboard_data.extend(self.visit_session_data(session=session))
+
+        box_data = []
+        for session in box_sessions:
+            box_data.extend(self.visit_session_data(session=session))
+
+        return ( keyboard_data, box_data)
     
 
     def visit_session_data(self, session):
@@ -80,8 +84,7 @@ class MakeTensorWindowsDataDecorator(MakeWindowsDataDecorator):
     Returns a list of tuples ( data_window, label ) for each window in the format of a pytorch tensor
     """
 
-    @staticmethod
-    def transform_label(label):
+    def transform_label(self, label):
         if not label:
             label = 0
         elif label:
@@ -91,8 +94,7 @@ class MakeTensorWindowsDataDecorator(MakeWindowsDataDecorator):
         
         return torch.tensor(label)
     
-    @staticmethod
-    def transform_window(window):
+    def transform_window(self, window):
         return torch.from_numpy(window).float()
     
 
