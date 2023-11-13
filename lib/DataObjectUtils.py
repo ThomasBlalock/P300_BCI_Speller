@@ -98,16 +98,16 @@ class MakeTensorWindowsDataDecorator(MakeWindowsDataDecorator):
     def transform_window(self, window):
         return torch.from_numpy(window).float()
     
-    class DataVisitor(object):
+class DataVisitor(object):
 
-        def visit_data_object(self, object):
-            raise NotImplementedError
-    
-        def visit_session_data(self, session):
-            raise NotImplementedError
+    def visit_data_object(self, object):
+        raise NotImplementedError
 
-        def visit_trial_data(self, trial):
-            raise NotImplementedError
+    def visit_session_data(self, session):
+        raise NotImplementedError
+
+    def visit_trial_data(self, trial):
+        raise NotImplementedError
     
 
 ##########################################################################################

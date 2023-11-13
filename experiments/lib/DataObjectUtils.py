@@ -98,16 +98,17 @@ class MakeTensorWindowsDataDecorator(MakeWindowsDataDecorator):
     def transform_window(self, window):
         return torch.from_numpy(window).float()
     
-    class DataVisitor(object):
 
-        def visit_data_object(self, object):
-            raise NotImplementedError
+class DataVisitor(object):
+
+    def visit_data_object(self, object):
+        raise NotImplementedError
     
-        def visit_session_data(self, session):
-            raise NotImplementedError
+    def visit_session_data(self, session):
+        raise NotImplementedError
 
-        def visit_trial_data(self, trial):
-            raise NotImplementedError
+    def visit_trial_data(self, trial):
+        raise NotImplementedError
     
 
 ##########################################################################################
@@ -159,7 +160,6 @@ class BandpassFilterVisitor(FilterVisitor):
         """Bandpass filter using scipy.signal.butter"""
         b, a = signal.butter(3, [self.low, self.high], btype='bandpass', fs=self.SAMPLE_RATE)
         return signal.lfilter(b, a, data)
-    
 
 class BandstopFilterVisitor(FilterVisitor):
     
