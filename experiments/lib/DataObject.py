@@ -91,14 +91,14 @@ class TrialData:
 
 class BoxTrialData(TrialData):
 
-    def __init__(self, trial_dict, parent_session):
-        super().__init__(trial_dict, parent_session)
+    def __init__(self, trial_dict, parent_session, window_len = 250):
+        super().__init__(trial_dict, parent_session, window_len = window_len)
 
 
 
 class KeyboardTrialData(TrialData):
 
-    def __init__(self, trial_dict, parent_session):
-        super().__init__(trial_dict, parent_session)
+    def __init__(self, trial_dict, parent_session, window_len = 250):
+        super().__init__(trial_dict, parent_session, window_len = window_len)
         self.pattern = trial_dict['pattern']
         self.letter = trial_dict['letter']
