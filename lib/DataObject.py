@@ -1,7 +1,7 @@
 class DataObject:
 
 
-    def __init__(self, data_dict):
+    def __init__(self, data_dict, window_len = 250):
 
         self.keyboard_sessions = []
 
@@ -9,7 +9,7 @@ class DataObject:
             keyboard_session_list = data_dict['keyboard_data']
 
             for session_dict in keyboard_session_list:
-                self.keyboard_sessions.append(SessionData(session_dict=session_dict, type='keyboard'))
+                self.keyboard_sessions.append(SessionData(session_dict=session_dict, type='keyboard', window_len = window_len))
 
         self.box_sessions = []
 
@@ -17,7 +17,7 @@ class DataObject:
             box_session_list = data_dict['box_data']
 
             for session_dict in box_session_list:
-                self.box_sessions.append(SessionData(session_dict=session_dict, type='box'))
+                self.box_sessions.append(SessionData(session_dict=session_dict, type='box', window_len = window_len))
 
 
     def get_data(self, decorator=None, type='box'):
@@ -36,7 +36,7 @@ class DataObject:
 
 class SessionData:
     
-    def __init__(self, session_dict, type):
+    def __init__(self, session_dict, type, window_len = 250):
         metadata = session_dict['metadata']
         self.data = session_dict['data']
         self.start_time = metadata['start_time']
@@ -49,9 +49,9 @@ class SessionData:
         self.trials = []
         for trial in metadata['trials']:
             if self.type == 'keyboard':
-                self.trials.append(KeyboardTrialData(trial_dict=trial, parent_session=self))
+                self.trials.append(KeyboardTrialData(trial_dict=trial, parent_session=self, window_len = window_len))
             elif self.type == 'box':
-                self.trials.append(BoxTrialData(trial_dict=trial, parent_session=self))
+                self.trials.append(BoxTrialData(trial_dict=trial, parent_session=self, window_len = window_len))
             else:
                 raise ValueError('Session type must be either keyboard or box')
 
@@ -69,14 +69,17 @@ class SessionData:
 
 class TrialData:
 
-    def __init__(self, trial_dict, parent_session):
-        self.timestamp = trial_dict['timestamp']
+    def __init__(self, trial_dict, parent_session, window_len = 250):
+        timestamp = trial_dict['timestamp']
+        data_len = len(parent_session.data[0])
+        self.start_idx = (int) ( (timestamp[0] / parent_session.length) * data_len )
+        self.end_idx = self.start_idx + window_len
         self.label = trial_dict['label']
         self.parent_session = parent_session
 
     def get_data(self, decorator=None):
         if decorator is None:
-            data = self.data
+            data = self.parent_session.data[:, self.start_idx:self.end_idx]
         else:
             data = decorator.visit_trial_data(trial=self)
         return data
