@@ -59,16 +59,8 @@ class MakeWindowsDataDecorator(DataDecorator):
         """
         Returns a tuple ( data_windows, label )
         """
-        start = trial.timestamp[0]
-        end = start + trial.parent_session.sample_time
 
-        # Make it an index for the data rather than a time
-        data_len = len(trial.parent_session.data[0])
-        start = (int) ( (start / trial.parent_session.length) * data_len )
-        # end = (int) ( (end / trial.parent_session.length) * data_len ) # ERROR: there is a rounding error here. Some of the end times are 1 idx too large
-        end = start + self.window_size
-
-        window = self.transform_window(trial.parent_session.data[:, start:end])
+        window = self.transform_window(trial.parent_session.data[:, trial.start_idx:trial.end_idx])
         label = self.transform_label(trial.label)
 
         return ( window, label )
