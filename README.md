@@ -3,8 +3,6 @@
 This repo only contains polished/working code outside of the 'experiment' directory. All in-progress code is stored in 'experiments'.
 
 
-TODO: test / debug the new method of getting data in the dataObject object. 
-Using the times to get the indexes caused some samples to have 1 more element than other samples
-This was a rounding margin error.
-I tried to just use the start time and add 250, passed in as an argument that defaults to 250. Test it in model.
-I have not yet updated the lib packages with the new DataObject and utils. Do that first.
+TODO (model.ipynb): Figure out what's wrong with either the network or the data loading process.
+Right before it passes through the network, a batch is size [batch_size, 8, 250] as expected, but then it throws
+an error saying that its sized [1, batch_size, 8, 250], reading batch_size as the channels, which is wrong?
