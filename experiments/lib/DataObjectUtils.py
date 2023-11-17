@@ -163,3 +163,25 @@ class BandstopFilterVisitor(FilterVisitor):
         """Bandstop filter using scipy.signal.butter"""
         b, a = signal.butter(3, [self.low, self.high], btype='bandstop', fs=self.SAMPLE_RATE)
         return signal.lfilter(b, a, data)
+    
+
+    ##########################################################################################
+
+
+class AddDataVisitor(DataVisitor):
+    """
+    Adds data to the DataObject
+    """
+
+    def __init__(self, dataObj):
+        self.data = dataObj
+
+    def visit_data_object(self, object):
+        object.keyboard_sessions.extend(self.data.keyboard_sessions)
+        object.box_sessions.extend(self.data.box_sessions)
+    
+    def visit_session_data(self, session):
+        pass
+    
+    def visit_trial_data(self, trial):
+        pass
