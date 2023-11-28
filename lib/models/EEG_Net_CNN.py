@@ -30,13 +30,13 @@ class EEG_Net_CNN(torch.nn.Module):
             nn.BatchNorm1d(32),
 
             # ELU Activation
-            nn.ELU(alpha=1.0),
+            nn.ELU(alpha=1.0)
 
             # Avg Pooling 1D
-            nn.AvgPool1d(kernel_size=4, stride=4, padding=0),
+            # nn.AvgPool1d(kernel_size=4, stride=4, padding=0),
 
             # Dropout
-            nn.Dropout(p=0.15)
+            # nn.Dropout(p=0.15)
         )
 
         self.block2 = torch.nn.Sequential( 
@@ -47,13 +47,13 @@ class EEG_Net_CNN(torch.nn.Module):
             nn.BatchNorm1d(32),
 
             # ELU Activation
-            nn.ELU(alpha=1.0),
+            nn.ELU(alpha=1.0)
 
             # Avg Pooling 1D
-            nn.AvgPool1d(kernel_size=8, stride=8, padding=0),
+            # nn.AvgPool1d(kernel_size=8, stride=8, padding=0),
 
             # Dropout
-            nn.Dropout(p=0.15)
+            # nn.Dropout(p=0.15)
         )
 
         # Calculating the length of the signal after convolutions and pooling

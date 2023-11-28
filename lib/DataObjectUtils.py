@@ -188,3 +188,67 @@ class AddDataVisitor(DataVisitor):
     
     def visit_trial_data(self, trial):
         pass
+
+
+##########################################################################################
+
+
+class CommonAveragingVisitor(DataVisitor):
+    
+    def __init__(self):
+        pass
+
+    def visit_data_object(self, object):
+        for session in object.keyboard_sessions:
+            self.visit_session_data(session=session)
+
+        for session in object.box_sessions:
+            self.visit_session_data(session=session)
+
+    def visit_session_data(self, session):
+        data = []
+        for i, channel in enumerate(session.data):
+            # Only the channels with EM data will be filtered
+            if i>1 and i<9:
+                data.append(self.common_average(channel))
+            else:
+                data.append(channel)
+
+    def common_average(self, channel):
+        avg_signal = np.mean(channel, axis=0)
+        avg_final = channel - avg_signal
+        norm_data = (avg_final - np.min(avg_final)) / (np.max(avg_final) - np.min(avg_final))
+        final_data = np.sqrt(norm_data)
+        return final_data
+    
+
+##########################################################################################
+
+
+class SmoothDataVisitor(DataVisitor):
+
+    SAMPLE_RATE = 250
+
+    def __init__(self, n=15, low=0.1, high=30):
+        self.n = n
+        self.b = [1.0/n] * n
+        _, self.a = signal.butter(3, [low, high], btype='bandpass', fs=self.SAMPLE_RATE)
+
+    def visit_data_object(self, object):
+        for session in object.keyboard_sessions:
+            self.visit_session_data(session=session)
+
+        for session in object.box_sessions:
+            self.visit_session_data(session=session)
+
+    def visit_session_data(self, session):
+        data = []
+        for i, channel in enumerate(session.data):
+            # Only the channels with EM data will be filtered
+            if i>1 and i<9:
+                data.append(self.smooth(channel))
+            else:
+                data.append(channel)
+
+    def smooth(self, channel):
+        return signal.lfilter(self.b, self.a, channel)
