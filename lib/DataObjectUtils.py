@@ -208,11 +208,15 @@ class CommonAveragingVisitor(DataVisitor):
     def visit_session_data(self, session):
         data = []
         for i, channel in enumerate(session.data):
+            if len(channel) == 0:
+                continue
+
             # Only the channels with EM data will be filtered
             if i>1 and i<9:
                 data.append(self.common_average(channel))
             else:
                 data.append(channel)
+        session.data = np.array(data)
 
     def common_average(self, channel):
         avg_signal = np.mean(channel, axis=0)

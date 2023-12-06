@@ -64,11 +64,6 @@ class Board:
     def stop_stream(self):
         self.board.stop_stream()
 
-    def get_data_stop_stream(self):
-        data = self.board.get_board_data()
-        self.board.stop_stream()
-        return data
-
     def get_data(self):
         return self.board.get_board_data()
     
@@ -553,7 +548,8 @@ class DataAcquisitionHandler:
         board = Board(self.__board_port)
         board.start_stream()
         time.sleep(time_to_record)
-        data = board.get_data_stop_stream()
+        data = board.get_data()
+        board.stop_stream()
         del board
         return data
 
