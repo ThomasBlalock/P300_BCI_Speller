@@ -28,7 +28,7 @@ def train(train_dataloader, val_dataloader, model, loss_fn, optimizer, num_epoch
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
             total += y.size(0)
 
-            if batch % print_every == 0 and print_every > 0:
+            if batch % print_every == print_every-1 and print_every > 0:
                 print(f'Epoch {epoch+1} - Batch {batch+1}/{len(train_dataloader)} - Loss: {loss.item():.4f}')
 
         avg_train_loss = running_loss / len(train_dataloader)
