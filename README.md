@@ -6,7 +6,7 @@ Brain-Computer Interfaces (BCIs) are devices that read electrical signals from s
 ## Table of Contents
 1. [QuickStart](#quickstart)
 2. [Introduction](#introduction)
-3 [Hardware Setup](#hardware-setup)
+3. [Hardware Setup](#hardware-setup)
 4. [Hardware-Software Integration](#hardware-software-integration)
 5. [Stimulus-Producing Software](#stimulus-producing-software)
 6. [Data Collection](#data-collection)
@@ -17,6 +17,15 @@ Brain-Computer Interfaces (BCIs) are devices that read electrical signals from s
 11. [Results](#model)
 12. [Next Steps](#next-steps)
 13. [References](#references)
+
+## QuickStart
+The following steps detail how to use this system.
+1. Buy the OpenBCI Cyton board and electrodes or other hardware
+If you chose to use different hardware, then you can still use this codebase by modifying the 'Board' object to work with your hardware API.
+2. Assemble your hardware
+In this project, I used 8 electrodes. Based on my research, I recommend using at least 16. Assemble the system so that wires from different electrodes are orthoganal to each other to minimize cross-contamination.
+3. Open 'p300_bci_speller.ipynb' and run each code block in order.
+This file is self-contained. You could download only this file and system will work as expected.
 
 ## Introduction
 A brain-computer interface (BCI) reads and interprets the electromagnetic fields created by neural activity. This project employs a specific type of non-invasive BCI called electroencephalography (EEG), which reads electrical signals using electrodes that sit on a person's scalp. this project seeks to create a system called a speller application to enable people to communicate without any motor movement. Different BCI spellers utilize different signals in the brain. These various strategies for speller applications are referred to as speller paradigms. We employ the p300 speller paradigm, which utilizes the p300 novelty response in the brain that can be triggered by flashing colors as well as a digital keyboard that flashes in different patterns to determine what a subject is looking at. On the back-end, a classification model parses the data to determine if the p300 response is present. Significant noise is introduced in EEG systems, originating from other processes in the brain, the environment, and other processes in the body, such as blinking. Every part of this system pipeline can be optimized. The quality of the stimulus-producing software determines the size of the p300 response. The quality of data cleaning and feature extraction could determine if the model converges.
