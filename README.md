@@ -93,7 +93,7 @@ There is one main shortcoming in this project: the classification model's perfor
 - The quality and size of the training dataset.
 - The quality of the data preprocessing.
 - The architecture and training algorithm of the model.
-- 
+
 ### Dataset
 Great pains were taken to optimize the p300 response and to ensure that all data collected was of good quality. Furthermore, 3,000 samples of data would be enough to fully train a small classification network like the EEG_Net_CNN. However, if the size of the neural network is increased, then more samples will need to be collected.
 ### Data Preprocessing
