@@ -42,10 +42,12 @@ The software generated to interact with the helmet assumes that the helmet trans
 The end goal is to have a QWERTY keyboard that utilizes a binary search with the p300 responses to find the letter that a subject is looking at. It was determined that the machine learning model would converge more quickly if it was first trained on a more prominent p300 signal and then trained on the QWERTY keyboard. There are two GUI objects that flash different colors to stimulate the P300 response. The first version flashes different-sized boxes while the second version performs the binary search using a QWERTY keyboard with some non-letter values.
 ### Box GUI
 The first GUI is just a flashing box. It is designed to elicit a strong p300 response. The data collected using this GUI was used to pretrain the model. The model will theoretically converge faster on a dataset with a more pronounced loss landscape. The GUI enables the user to specify differently sized and shaped box. This variation allows the user to vary the size of the p300 response since the size of the flashing box will likely correlate to the size of the p300 response. Multiple colors flash during a single sample. The colors and time between flashes are randomized to maximize the p300 response. The user controls the GUI by pressing any button to start a session and pressing any button to end the session.
+
 <video width=" " height=" "
        src="content/box_video.mp4"  
        controls>
 </video>
+
 ### Keyboard GUI
 The other GUI is a QWERTY keyboard that performs a binary search to locate the letter a subject is looking at. Multiple colors flash during a single sample. The colors and time between flashes are randomized to maximize the p300 response. The user controls the GUI by pressing any button to start a session and pressing any button to end the session.
 <video width=" " height=" "
