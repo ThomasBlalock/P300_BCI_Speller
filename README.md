@@ -41,19 +41,11 @@ The software generated to interact with the helmet assumes that the helmet trans
 ## Stimulus-Producing Software
 The end goal is to have a QWERTY keyboard that utilizes a binary search with the p300 responses to find the letter that a subject is looking at. It was determined that the machine learning model would converge more quickly if it was first trained on a more prominent p300 signal and then trained on the QWERTY keyboard. There are two GUI objects that flash different colors to stimulate the P300 response. The first version flashes different-sized boxes while the second version performs the binary search using a QWERTY keyboard with some non-letter values.
 ### Box GUI
-The first GUI is just a flashing box. It is designed to elicit a strong p300 response. The data collected using this GUI was used to pretrain the model. The model will theoretically converge faster on a dataset with a more pronounced loss landscape. The GUI enables the user to specify differently sized and shaped box. This variation allows the user to vary the size of the p300 response since the size of the flashing box will likely correlate to the size of the p300 response. Multiple colors flash during a single sample. The colors and time between flashes are randomized to maximize the p300 response. The user controls the GUI by pressing any button to start a session and pressing any button to end the session.
-
-<video width=" " height=" "
-       src="content/box_video.mp4"  
-       controls>
-</video>
+The first GUI is just a flashing box. It is designed to elicit a strong p300 response. The data collected using this GUI was used to pretrain the model. The model will theoretically converge faster on a dataset with a more pronounced loss landscape. The GUI enables the user to specify differently sized and shaped box. This variation allows the user to vary the size of the p300 response since the size of the flashing box will likely correlate to the size of the p300 response. Multiple colors flash during a single sample. The colors and time between flashes are randomized to maximize the p300 response. The user controls the GUI by pressing any button to start a session and pressing any button to end the session. ([Video](content/box_video.mp4))
 
 ### Keyboard GUI
-The other GUI is a QWERTY keyboard that performs a binary search to locate the letter a subject is looking at. Multiple colors flash during a single sample. The colors and time between flashes are randomized to maximize the p300 response. The user controls the GUI by pressing any button to start a session and pressing any button to end the session.
-<video width=" " height=" "
-       src="content/keyboard_video.mp4"  
-       controls>
-</video>
+The other GUI is a QWERTY keyboard that performs a binary search to locate the letter a subject is looking at. Multiple colors flash during a single sample. The colors and time between flashes are randomized to maximize the p300 response. The user controls the GUI by pressing any button to start a session and pressing any button to end the session. ([Video](content/keyboard_video.mp4))
+
 ## Data Collection
 Data collection was handled using a separate object named 'DataAcquisitionHandler'. This object has methods to collect data using both the box GUI and the keyboard GUI. It contains a 'Board' object and stores all the data internally.<br>
 
@@ -94,7 +86,7 @@ The Universal Joint Feature Extraction for P300 EEG Classification Using Multi-T
 ## Results
 Overall, roughly 3,000 samples of data were collected. These samples were collected in optimal conditions in locations and times with no periphery stimulus-producing distractions and no extraneous electrical signals. The first iteration of a classification model (EEG_Net_CNN) did not perform well enough for use in a speller application. The model was initially trained on unnormalized data and did not achieve a usable accuracy. The model was then retrained on fully preprocessed data. It achieved a better yet still unusable accuracy of 53.62%. A column chart comparing the baseline accuracy to the EEG_Net_CNN's accuracy is provided below:
 <br><br>
-![Barchart Comparison of EEG_Net_CNN Accuracy to the Baseline Accuracy](content/accuracy_comparison_chart.png)
+![Barchart Comparison of EEG_Net_CNN Accuracy to the Baseline Accuracy](content/accuracy_chart.png)
 
 ## Next Steps
 There is one main shortcoming in this project: the classification model's performance. This can be due to one or more of three factors:
